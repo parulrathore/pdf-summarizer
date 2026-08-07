@@ -35,11 +35,20 @@ def summarize_text(full_text: str) -> DocumentSummary:
     return result
 
 if __name__ == "__main__":
-    sample_text = """
-    Apple, Inc. engages in the design, manufacture, and sale of smartphones,
-    personal computers, tablets, wearables and accessories. Founded by Steven
-    Paul Jobs, Ronald Gerald Wayne, and Stephen G. Wozniak in April 1976,
-    headquartered in Cupertino, CA.
-    """
-    result = summarize_text(sample_text)
+    import sys
+    from extract import extract_text_from_pdf
+
+    if len(sys.argv) < 2:
+        print("Usage: python summarize.py <path_to_pdf>")
+        sys.exit(1)
+
+    pdf_path = sys.argv[1]
+    pages = extract_text_from_pdf(pdf_path)
+
+    # Combine all pages into one text block, keeping page markers
+    full_text = "\n\n".join(f"[Page {p['page']}]\n{p['text']}" for p in pages)
+
+    print(f"Extracted {len(pages)} pages, {len(full_text)} total chars\n")
+
+    result = summarize_text(full_text)
     print(json.dumps(result.model_dump(), indent=2))
