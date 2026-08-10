@@ -27,3 +27,15 @@ Upload a PDF → extract its text → get back a structured summary with:
 4. app.py # Streamlit UI
 5. requirements.txt # Python dependencies
 
+## Setup
+
+### 1. Prerequisites (system-level)
+
+- Python 3.11+
+- [Poppler](https://poppler.freedesktop.org/) (for PDF-to-image conversion)
+- [Tesseract OCR](https://github.com/tesseract-ocr/tesseract)
+
+**macOS:**
+```bash
+brew install poppler tesseract
+```
