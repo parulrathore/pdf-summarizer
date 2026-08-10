@@ -36,6 +36,40 @@ Upload a PDF → extract its text → get back a structured summary with:
 - [Tesseract OCR](https://github.com/tesseract-ocr/tesseract)
 
 **macOS:**
-```bash
+bash
 brew install poppler tesseract
-```
+
+**Ubuntu/Debian:**
+bash
+sudo apt-get install poppler-utils tesseract-ocr
+
+### 2. Python environment
+
+python3 -m venv venv
+source venv/bin/activate    # Windows: venv\Scripts\activate
+pip install -r requirements.txt
+### 3. API key
+
+Get a key from [console.anthropic.com](https://console.anthropic.com), then create a .env file in the project root:
+
+ANTHROPIC_API_KEY=your-key-here
+
+.env is git-ignored — never commit your real key.
+
+## Usage
+
+### Command line
+
+python3 extract.py path/to/file.pdf      # test extraction only
+python3 summarize.py path/to/file.pdf    # full pipeline, prints structured JSON
+### Web UI
+
+streamlit run app.py
+Opens at http://localhost:8501. Upload a PDF, click **Summarize**, view the structured result.
+
+## Known limitations
+
+OCR struggles with dense forms, tables, and non-prose layouts (e.g. order forms, menus) — the UI surfaces a warning when this is detected, but extraction may still be inaccurate
+Multi-column detection assumes a simple 2-column split at the page midpoint; irregular or 3+ column layouts aren't fully handled
+No groundedness/hallucination check yet — structured output is schema-valid but not independently verified against source text
+Single-source only (PDF) — no support yet for URLs, DOCX, or other formats
