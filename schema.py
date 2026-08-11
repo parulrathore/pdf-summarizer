@@ -17,3 +17,13 @@ class DocumentSummary(BaseModel):
     key_points: list[KeyPoint]
     entities: Entities
     confidence: Literal["high", "medium", "low"]
+
+class EmailSummary(BaseModel):
+    subject: str
+    sender: str
+    summary: str = Field(description="2-4 sentence overview")
+    key_points: list[str]
+    action_items: list[str] = []
+    requires_response: bool
+    sentiment: Literal["neutral", "urgent", "positive", "negative"]
+    confidence: Literal["high", "medium", "low"]
