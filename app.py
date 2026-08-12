@@ -36,8 +36,8 @@ if source_type == "PDF":
                     "Text extraction may be inaccurate, and the summary below could be unreliable."
                 )
 
-        #    with st.expander("View raw extracted text"):
-         #       st.text(full_text[:3000] + ("..." if len(full_text) > 3000 else ""))
+            # with st.expander("View raw extracted text"):
+            #     st.text(full_text[:3000] + ("..." if len(full_text) > 3000 else ""))
 
             if st.button("Summarize", type="primary"):
                 with st.spinner("Calling Claude..."):
@@ -67,8 +67,8 @@ if source_type == "PDF":
                     for d in result.entities.dates:
                         st.markdown(f"- {d}")
 
-                with st.expander("Raw JSON"):
-                    st.json(result.model_dump())
+                # with st.expander("Raw JSON"):
+                #     st.json(result.model_dump())
 
         finally:
             os.unlink(tmp_path)
