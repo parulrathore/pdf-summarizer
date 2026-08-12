@@ -3,7 +3,7 @@ load_dotenv()
 
 import anthropic
 import json
-from schema import DocumentSummary
+from schema import DocumentSummary, EmailSummary
 
 client = anthropic.Anthropic()  # reads ANTHROPIC_API_KEY from .env
 
@@ -33,6 +33,22 @@ def summarize_text(full_text: str) -> DocumentSummary:
     # Validate against Pydantic schema
     result = DocumentSummary.model_validate(tool_use_block.input)
     return result
+
+def summarize_email(full_text: str) -> EmailSummary:
+    tool = {
+        "name": "structured_email_summary",
+        "description": "Return a structured summary of the email",
+        "input_schema": EmailSummary.model_json_schema()
+    }
+    response = client.messages.create(
+        model="claude-sonnet-4-6",
+        max_tokens=1500,
+        tools=[tool],
+        tool_choice={"type": "tool", "name": "structured_email_summary"},
+        messages=[{"role": "user", "content": f"Summarize this email:\n\n{full_text}"}]
+    )
+    tool_use_block = next(b for b in response.content if b.type == "tool_use")
+    return EmailSummary.model_validate(tool_use_block.input)
 
 if __name__ == "__main__":
     import sys
