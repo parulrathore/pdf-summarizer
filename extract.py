@@ -16,12 +16,18 @@ def extract_text_native(pdf_path: str) -> list[dict]:
 
 
 def extract_text_ocr(pdf_path: str) -> list[dict]:
-    """Fallback: convert pages to images and OCR them with Tesseract."""
+    """Fallback: convert pages to images and OCR them with Tesseract.
+    Also captures Tesseract's own confidence score per page."""
     images = convert_from_path(pdf_path)
     pages = []
     for page_num, image in enumerate(images, start=1):
         text = pytesseract.image_to_string(image).strip()
-        pages.append({"page": page_num, "text": text})
+
+        data = pytesseract.image_to_data(image, output_type=pytesseract.Output.DICT)
+        confidences = [int(c) for c in data["conf"] if c != "-1"]
+        avg_confidence = sum(confidences) / len(confidences) if confidences else 0
+
+        pages.append({"page": page_num, "text": text, "ocr_confidence": avg_confidence})
     return pages
 
 
@@ -31,18 +37,28 @@ def is_extraction_poor(pages: list[dict]) -> bool:
     return avg_chars_per_page < 50
 
 
-def extract_text_from_pdf(pdf_path: str) -> list[dict]:
+def extract_text_from_pdf(pdf_path: str) -> dict:
     """
     Tries native text extraction first. Falls back to OCR if the result
-    looks poor (e.g. scanned/image-based PDF).
+    looks poor. Returns pages + metadata about extraction method/confidence.
     """
     pages = extract_text_native(pdf_path)
+    method = "native"
+    low_confidence = False
 
     if is_extraction_poor(pages):
-        print("Native extraction looks poor — falling back to OCR...")
         pages = extract_text_ocr(pdf_path)
+        method = "ocr"
 
-    return pages
+        confidences = [p.get("ocr_confidence", 0) for p in pages]
+        avg_conf = sum(confidences) / len(confidences) if confidences else 0
+        low_confidence = avg_conf < 60
+
+    return {
+        "pages": pages,
+        "method": method,
+        "low_confidence": low_confidence
+    }
 
 
 if __name__ == "__main__":
@@ -51,11 +67,12 @@ if __name__ == "__main__":
         sys.exit(1)
 
     pdf_path = sys.argv[1]
-    pages = extract_text_from_pdf(pdf_path)
+    result = extract_text_from_pdf(pdf_path)
 
-    print(f"Extracted {len(pages)} pages\n")
+    print(f"Method: {result['method']}, Low confidence: {result['low_confidence']}")
+    print(f"Extracted {len(result['pages'])} pages\n")
 
-    for p in pages[:3]:
+    for p in result["pages"][:3]:
         print(f"--- Page {p['page']} ({len(p['text'])} chars) ---")
         print(p["text"][:500])
         print()
