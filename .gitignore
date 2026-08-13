@@ -1,2 +1,7 @@
 venv/
 .env
+google_email_credentials.json
+token.json
+__pycache__/
+*.pyc
+.DS_Store
