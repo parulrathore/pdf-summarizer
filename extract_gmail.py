@@ -1,6 +1,7 @@
 from googleapiclient.discovery import build
 from gmail_auth import get_gmail_credentials
 import base64
+import re
 
 
 def get_gmail_service():
@@ -35,7 +36,6 @@ def list_recent_emails(max_results: int = 10) -> list[dict]:
 
     return summaries
 
-
 def extract_text_from_gmail_message(message_id: str) -> dict:
     """Fetches a single email's full body and returns it in the same shape as extract_email.py."""
     service = get_gmail_service()
@@ -48,17 +48,21 @@ def extract_text_from_gmail_message(message_id: str) -> dict:
     date = headers.get("Date", "")
 
     body = _extract_body(msg["payload"])
+    links = extract_links(body)
+    category = get_gmail_category(msg.get("labelIds", []))
 
     full_text = f"From: {sender}\nTo: {to}\nDate: {date}\nSubject: {subject}\n\n{body.strip()}"
 
     return {
         "source_type": "email",
-        "metadata": {"sender": sender, "to": to, "date": date, "subject": subject},
+        "metadata": {
+            "sender": sender, "to": to, "date": date, "subject": subject,
+            "links": links, "category": category,
+        },
         "full_text": full_text,
         "method": "native",
         "low_confidence": False,
     }
-
 
 def _extract_body(payload) -> str:
     """Recursively find the text/plain part of a Gmail message payload."""
@@ -72,3 +76,23 @@ def _extract_body(payload) -> str:
                 return result
 
     return ""
+
+def extract_links(text: str) -> list[str]:
+    """Pulls unique URLs out of the email body via regex."""
+    url_pattern = r'https?://[^\s<>"\')\]]+'
+    return list(dict.fromkeys(re.findall(url_pattern, text)))  # dedupe, preserve order
+
+
+def get_gmail_category(label_ids: list[str]) -> str:
+    """Maps Gmail's internal category labels to a readable category."""
+    mapping = {
+        "CATEGORY_PERSONAL": "Primary / Inbox",
+        "CATEGORY_SOCIAL": "Social",
+        "CATEGORY_PROMOTIONS": "Promotional",
+        "CATEGORY_UPDATES": "Updates",
+        "CATEGORY_FORUMS": "Forums",
+    }
+    for label in label_ids:
+        if label in mapping:
+            return mapping[label]
+    return "Other"
